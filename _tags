@@ -1,0 +1,5 @@
+true: -traverse
+<pa_pcduce.ml>: package(camlp4), pp(camlp4orf.opt)
+<{custom,support,ast,sortedList,boolean,singleton,interval,subType,typeMatch,core,lexer,driver}/*.cmx>: for-pack(Pcduce_lib)
+<main.*>: package(extlib), use_pcduce_lib
+#true: use_menhir

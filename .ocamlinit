@@ -1,0 +1,5 @@
+#directory "_build";;
+#use "topfind";;
+#camlp4o;;
+#load "pcduce_lib.cma";;
+#load "pa_pcduce.cmo";;

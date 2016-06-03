@@ -1,0 +1,192 @@
+INSTALLATION
+============
+
+To compile you need Ocaml version > 3.12.
+Then "make all" or more simply "make"
+
+Dependencies
+  (as debian packages) :
+   - camlp4-extras
+   - libextlib-ocaml-dev
+  (as Fedora packages)
+   - ocaml-extlib-devel
+   - ocaml-camlp4-devel
+   - ocaml-findlib-devel
+
+
+
+USAGE
+=====
+
+To run a few test examples from a file execute
+    ./main.native tests/test_paper-part2-exemp.f
+The test suite includes all the examples given in the extended version of
+the article  "Polymorphic Functions with Set-Theoretic Types. Part 2: Local
+Type Inference and Type Reconstruction".
+The file tests/test_paper-part2-exemp.f contains comments for specific
+examples. We suggest to check these comments for more an extended
+explaination.
+
+Other files in the directory tests that can be tested are:
+- test_exp.f   	   test some expressions
+- test_sub.f	   test the subtype directive (checks subtyping)
+- test_match.f	   test the match directive to infer sets of type substitutions
+- test_appl.f	   test the appl directive (compute the result type of
+                   an application)
+
+It is also possible to run an interactive shell (see below).
+
+
+
+SYNTAX
+======
+
+(1) type expression
+Basic types:  Int, Nat, Bool, and singleton types (indivisible types)
+lower case letters = singleton types
+upper case letters = type variables
+0 = empty type
+1 = top type
+[n -- m] = interval type (with n,m two integers)
+mu x . t = recursive type
+x = recursion variable
+^  = intersection (infix)
+-  = negation (prefix)
+v  = union (infix)
+,  = product (infix)
+-> = arrow (infix)
+\  = difference (infix) (\\ in the interactive shell)
+
+
+(2) expression
+
+basic values: true, false, 0, 1, -1, 2, -2, ...
+integer operators: +, -, *, /, %, >:, <:, ==, >, <, !=
+boolean operators: &&, ||, !
+term variables: lower case letters (ranged over by x,y,f)
+e ::=  basic values
+     | variables
+     | (e1,e2)
+     | pi1 (e) | pi2 (e)
+     | mu f (t -> t; ...; t -> t) lambda x . e
+     | e' e
+     | e in t ? e1 : e2
+     | if e then e1 else e2 (== e in true ? e1 else e2)
+     | let x = e' in e      (== (mu f (ty_of_e' -> ty_of_e) lambda x . e) e')
+     | def x = e            (toplevel definition)
+
+(3) directives
+
+- subtype type1 <: type2;
+  (tests whether type1 is a subtype of type2)
+
+- appl type1 . type2;
+  (returns the type of the application of a function
+   of type type1 to an arguement of type type2)
+
+- match type1 / type2;
+   (returns a set of type substitutions [sigma_i]
+    such that type1[sigma_i] <:  type2[sigma_i])
+
+- def x = e
+  (top level expression definition)
+
+
+
+INTERACTIVE SHELL
+=================
+
+To run the interactive shell run the ocaml toplevel in the
+root of the project, and then use
+# <directive> "<argument>";;
+
+where <directive> is one of the following
+. subypte
+. appl
+. match
+. def
+and the form of the argument string  depends on the directive:
+
+$ocaml
+        Objective Caml version 3.12.1
+
+Findlib has been successfully loaded. Additional directives:
+  #require "package";;      to load a package
+  #list;;                   to list the available packages
+  #camlp4o;;                to load camlp4 (standard syntax)
+  #camlp4r;;                to load camlp4 (revised syntax)
+  #predicates "p,q,...";;   to set these predicates
+  Topfind.reset();;         to force that packages will be reloaded
+  #thread;;                 to enable threads
+
+/usr/lib/ocaml/dynlink.cma: loaded
+/usr/lib/ocaml/camlp4: added to search path
+/usr/lib/ocaml/camlp4/camlp4o.cma: loaded
+  Camlp4 Parsing version 3.12.1
+
+# subtype "(A -> C) ^ (B -> C) <: (A v B) -> C" ;;
+ subtype (A -> C) ^ (B -> C) <: (A v B) -> C >> Subtype ((A -> C) ^ (B -> C)) <: ((A v B) -> C)
+>> True
+- : unit = ()
+
+/*                                             */
+/*   notice below: backslash must be doubled   */
+/*                                             */
+# def "even = lambda (Int -> Bool; (A \\ Int) -> (A \\Int)) x. x in Int ? (x % 2 == 0) : x";;
+ def even = lambda (Int -> Bool; (A \ Int) -> (A \Int)) x. x in Int ? (x % 2 == 0) : x >> Eval expression : lambda ( Int -> Bool; (A ^ - Int) -> (A ^ - Int) ) x . (x) in Int ? (((x) / (2)) == (0)) : (x)
+>> even : ((Int -> Bool) ^ ((A ^ - Int) -> (A ^ - Int))) = lambda ( Int -> Bool; (A ^ - Int) -> (A ^ - Int) ) x . (x) in Int ? (((x) / (2)) == (0)) : (x)
+- : unit = ()
+
+
+# eval "even 2";;
+ even 2 >> Eval expression : (even) (2)
+>> _ : Bool = true
+- : unit = ()
+
+
+# eval "1 + 2 - 3 * 4 / 5";;
+ 1 + 2 - 3 * 4 / 5 >> Eval expression : ((1) + (2)) - (((3) * (4)) / (5))
+>> _ : Int = 1
+- : unit = ()
+
+
+# appl "((Int v Bool)-> A) -> A . (Int -> Int) ^ (Bool -> Int)";;
+ appl ((Int v Bool)-> A) -> A . (Int -> Int) ^ (Bool -> Int) >> Applying (((Int v Bool) -> A) -> A) to ((Int -> Int) ^ (Bool -> Int)) : Int
+>> simplifying as : Int
+- : unit = ()
+
+#  match "(Int , (Int v Bool)) / (A, Int) v (B, Bool)";;
+ match (Int , (Int v Bool)) / (A, Int) v (B, Bool)
+>> Matching ((A , Int) v (B , Bool)) against (Int , (Int v Bool))
+>> Step 1: [ [ (A >= Int); (B >= Int) ] ]
+
+>> Step 2: [ [ (A >= Int); (B >= Int) ] ]
+
+>> Possible substitution: [ [ (A := (Int v __var_A_22)); (B := (Int v __var_B_23)) ] ]
+- : unit = ()
+
+/*                                               */
+/* types of the form __v_X_nn denotes fresh      */
+/* type variables created by the system. The     */
+/* are typically used for bounded quantification */
+/* so A := (Int v __var_A_22) is a way to state  */
+/* that the types holds for all A :> Int while   */
+/*  A := (Int ^ __var_A_22) would represent the  */
+/* A <: Int bound                                */
+/*                                               */
+
+
+/* In case a subtyping check fails, a witness is */
+/* produced, with a substitution yielding that   */
+/* witness. The witness is a default value that  */
+/* inhabits the difference of the two types.     */
+
+# subtype "B^A^(-A, 2^-A^B) <: 0";;
+
+ subtype B^A^(-A, 2^-A^B) <: 0 >> Subtype ((B ^ A) ^ (- A , (([2 -- 2] ^ - A) ^ B))) <: 0
+>> False.
+	A witness is: (any, 2) using substitution:
+	A := (any, 2)  
+	B := (any, 2) v 2  
+ 
+- : unit = ()
